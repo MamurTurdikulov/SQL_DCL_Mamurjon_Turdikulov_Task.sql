@@ -33,16 +33,17 @@ BEGIN
         IF (SELECT COUNT(*) FROM payment WHERE customer_id = customer_record.customer_id) > 0 AND
            (SELECT COUNT(*) FROM rental WHERE customer_id = customer_record.customer_id) > 0 THEN
             role_name := 'client_' || customer_record.first_name || '_' || customer_record.last_name;
-            CREATE ROLE IF NOT EXISTS role_name;
-            GRANT USAGE, SELECT ON TABLE rental TO role_name;
-            GRANT USAGE, SELECT ON TABLE payment TO role_name;
-            GRANT role_name TO customer_record.customer_id;
+            EXECUTE 'CREATE ROLE IF NOT EXISTS ' || role_name;
+            EXECUTE 'GRANT USAGE, SELECT ON TABLE rental TO ' || role_name;
+            EXECUTE 'GRANT USAGE, SELECT ON TABLE payment TO ' || role_name;
+            EXECUTE 'GRANT ' || role_name || ' TO ' || customer_record.customer_id;
         END IF;
     END LOOP;
 END $$;
 
 -- Query to make sure a user sees only their own data in the "rental" table
-SET ROLE client_first_name_last_name;
+-- Replace {role_name} with the actual role name you want to test
+SET ROLE {role_name};
 -- Replace {customer_id} with the actual customer ID you want to test
 SELECT * FROM rental WHERE customer_id = {customer_id};
 RESET ROLE;
