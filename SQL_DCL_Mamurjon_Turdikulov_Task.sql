@@ -26,15 +26,17 @@ REVOKE INSERT ON TABLE rental FROM rental;
 DO $$ 
 DECLARE 
     customer_record record;
+    role_name VARCHAR(255);
 BEGIN 
     FOR customer_record IN SELECT customer_id, first_name, last_name FROM customer LOOP
         -- Check if customer has payment and rental history
         IF (SELECT COUNT(*) FROM payment WHERE customer_id = customer_record.customer_id) > 0 AND
            (SELECT COUNT(*) FROM rental WHERE customer_id = customer_record.customer_id) > 0 THEN
-            EXECUTE 'CREATE ROLE client_' || customer_record.first_name || '_' || customer_record.last_name;
-            EXECUTE 'GRANT USAGE, SELECT ON TABLE rental TO client_' || customer_record.first_name || '_' || customer_record.last_name;
-            EXECUTE 'GRANT USAGE, SELECT ON TABLE payment TO client_' || customer_record.first_name || '_' || customer_record.last_name;
-            EXECUTE 'GRANT client_' || customer_record.first_name || '_' || customer_record.last_name || ' TO ' || customer_record.customer_id;
+            role_name := 'client_' || customer_record.first_name || '_' || customer_record.last_name;
+            CREATE ROLE IF NOT EXISTS role_name;
+            GRANT USAGE, SELECT ON TABLE rental TO role_name;
+            GRANT USAGE, SELECT ON TABLE payment TO role_name;
+            GRANT role_name TO customer_record.customer_id;
         END IF;
     END LOOP;
 END $$;
